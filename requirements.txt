@@ -1,0 +1,16 @@
+# Web server
+fastapi
+uvicorn
+
+# LLM integration
+google-generativeai
+
+# Worker and message broker
+celery
+redis
+
+# For Mermaid diagram generation (if we do it server-side)
+# python-mermaid
+
+# Pydantic is a dependency of FastAPI, but we list it for clarity
+pydantic

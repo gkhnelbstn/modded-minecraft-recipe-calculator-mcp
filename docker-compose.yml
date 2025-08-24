@@ -1,0 +1,33 @@
+version: "3.9"
+services:
+  api:
+    build: .
+    image: mcp-image:latest
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - REDIS_URL=redis://redis:6379/0
+    volumes:
+      - ./instance:/data/instance:ro
+      - ./out:/app/out
+      - ./src:/app/src
+    ports: ["8000:8000"] # Changed to 8000 to match uvicorn default
+    depends_on: [redis]
+    command: ["uvicorn", "mcbom.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+  worker:
+    build: .
+    image: mcp-image:latest
+    # The command to start the celery worker will be defined later.
+    # For now, a placeholder command.
+    command: ["celery", "-A", "mcbom.worker.tasks", "worker", "--loglevel=info"]
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+    volumes:
+      - ./instance:/data/instance:ro
+      - ./out:/app/out
+      - ./src:/app/src
+    depends_on: [redis]
+
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
