@@ -11,6 +11,7 @@
   function App() {
     const [itemId, setItemId] = useState("minecraft:stick");
     const [qty, setQty] = useState(1);
+    const [apiBase, setApiBase] = useState("http://localhost:8000");
     const [instancePath, setInstancePath] = useState("/data/instance");
     const [diagram, setDiagram] = useState(true);
     const [loading, setLoading] = useState(false);
@@ -40,7 +41,8 @@
       setError("");
       setResult(null);
       try {
-        const res = await fetch("/calculate", {
+        const base = apiBase.replace(/\/$/, "");
+        const res = await fetch(`${base}/calculate`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ item_id: itemId, quantity: Number(qty), instance_path: instancePath, diagram }),
@@ -56,6 +58,10 @@
     }
 
     return h('div', { className: 'grid' }, [
+      h('div', {}, [
+        h('label', {}, 'API Base URL (e.g., http://localhost:8000)'),
+        h('input', { type: 'text', value: apiBase, onChange: e => setApiBase(e.target.value) }),
+      ]),
       h('div', {}, [
         h('label', {}, 'Item ID (e.g., minecraft:stick)'),
         h('input', { type: 'text', value: itemId, onChange: e => setItemId(e.target.value) }),

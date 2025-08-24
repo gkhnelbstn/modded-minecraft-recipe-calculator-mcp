@@ -14,7 +14,6 @@ services:
       - ${MCBOM_INSTANCE_HOST:-./instance}:/data/instance:ro
       - ./out:/app/out
       - ./src:/app/src
-      - ./frontend:/app/frontend
     ports: ["8000:8000"] # Changed to 8000 to match uvicorn default
     depends_on: [redis]
     command: ["uvicorn", "mcbom.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
@@ -36,3 +35,10 @@ services:
   redis:
     image: redis:7-alpine
     ports: ["6379:6379"]
+
+  frontend:
+    image: nginx:alpine
+    volumes:
+      - ./frontend:/usr/share/nginx/html:ro
+    ports: ["5173:80"]
+    depends_on: [api]
