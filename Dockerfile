@@ -15,6 +15,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the application source code
 COPY ./src /app/src
+COPY ./frontend /app/frontend
 
 # The command to run the application will be specified in docker-compose.yml
 # This allows the same image to be used for both the api and worker services.
