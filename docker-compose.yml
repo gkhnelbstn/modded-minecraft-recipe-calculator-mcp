@@ -6,8 +6,12 @@ services:
     environment:
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - REDIS_URL=redis://redis:6379/0
+      - MCBOM_DATA_ROOT=/data/instance
     volumes:
-      - ./instance:/data/instance:ro
+      # Map your local instance's minecraft folder to /data/instance (read-only)
+      # On Windows, prefer forward slashes in the env var, e.g.
+      # MCBOM_INSTANCE_HOST=C:/path/to/your/instance/minecraft
+      - ${MCBOM_INSTANCE_HOST:-./instance}:/data/instance:ro
       - ./out:/app/out
       - ./src:/app/src
     ports: ["8000:8000"] # Changed to 8000 to match uvicorn default
@@ -23,7 +27,7 @@ services:
     environment:
       - REDIS_URL=redis://redis:6379/0
     volumes:
-      - ./instance:/data/instance:ro
+      - ${MCBOM_INSTANCE_HOST:-./instance}:/data/instance:ro
       - ./out:/app/out
       - ./src:/app/src
     depends_on: [redis]
@@ -31,3 +35,10 @@ services:
   redis:
     image: redis:7-alpine
     ports: ["6379:6379"]
+
+  frontend:
+    image: nginx:alpine
+    volumes:
+      - ./frontend:/usr/share/nginx/html:ro
+    ports: ["5173:80"]
+    depends_on: [api]

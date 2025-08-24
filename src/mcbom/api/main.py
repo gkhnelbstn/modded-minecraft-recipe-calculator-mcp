@@ -1,11 +1,24 @@
+import os
 from fastapi import FastAPI, BackgroundTasks
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from celery.result import AsyncResult
-
+from typing import Optional
 from mcbom.worker.tasks import calculate_bom_task
 from mcbom.llm.client import extract_targets_from_text
 from mcbom.llm.schemas import ExtractedPlan
+from mcbom.core.engine import BomEngine
+from mcbom.core.parser import load_recipes, load_tags
+from mcbom.core.exporter import to_mermaid
+
+# TODO(roadmap-api):
+# - Upload endpoint to ingest JEI/RecipeManager dump files and merge into runtime registry.
+# - Config endpoint to control preferences (recipe types order, tag strategies).
+# - Streaming progress or SSE for long calculations; optional async route parity.
+# - Structured logging and correlation IDs; replace prints with logger.
+# - Authentication/rate limiting hooks for multi-user deployment.
 
 # --- Application Setup ---
 app = FastAPI(
@@ -13,6 +26,18 @@ app = FastAPI(
     description="API for calculating Minecraft Bill of Materials.",
     version="0.2.0-async"
 )
+
+# Allow local UI and other origins
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Serve minimal static UI from /ui
+app.mount("/ui", StaticFiles(directory="frontend", html=True), name="ui")
 
 # --- Data Models ---
 class PlanRequest(BaseModel):
@@ -32,6 +57,20 @@ class ResultResponse(BaseModel):
     task_id: str
     status: str
     result: Optional[dict] = None
+
+class DirectCalcRequest(BaseModel):
+    """Synchronous calculation request without Celery.
+
+    Args:
+        item_id: Fully-qualified item id (e.g., 'minecraft:stick').
+        quantity: Target quantity.
+        instance_path: Base path inside container/host where datapack data resides.
+        diagram: Whether to include Mermaid string in the response.
+    """
+    item_id: str
+    quantity: int = 1
+    instance_path: Optional[str] = None
+    diagram: bool = False
 
 # --- API Endpoints ---
 @app.post("/plan", response_model=ExtractedPlan)
@@ -72,3 +111,23 @@ async def get_task_result(task_id: str):
     }
 
     return JSONResponse(response)
+
+@app.post("/calculate")
+async def calculate_bom_direct(req: DirectCalcRequest):
+    """Synchronously calculates a BOM using on-disk datapacks and mod JARs.
+
+    It reads recipes/tags via parser, runs BomEngine.analyze, and optionally
+    returns a Mermaid diagram string.
+    """
+    base_path = req.instance_path or os.environ.get("MCBOM_DATA_ROOT", "/data/instance")
+    print(f"API: /calculate -> {req.quantity}x {req.item_id} using base '{base_path}'")
+
+    recipes = load_recipes(base_path)
+    tags = load_tags(base_path)
+    engine = BomEngine(recipes, tags)
+    analysis = engine.analyze(req.item_id, req.quantity)
+
+    resp = {"analysis": analysis}
+    if req.diagram:
+        resp["mermaid"] = to_mermaid(analysis)
+    return JSONResponse(resp)
