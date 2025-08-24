@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MC-BOM UI</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/modern-normalize/modern-normalize.min.css" />
+    <style>
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, sans-serif; padding: 24px; background: #0b1020; color: #e8ecf1; }
+      .card { background: #12192f; border: 1px solid #1f2a4a; border-radius: 10px; padding: 16px; max-width: 960px; margin: 0 auto; box-shadow: 0 10px 30px rgba(0,0,0,.25); }
+      h1 { font-size: 20px; margin: 0 0 16px; }
+      label { display: block; font-size: 13px; opacity: .9; margin: 10px 0 4px; }
+      input, button { font-size: 14px; }
+      input[type="text"], input[type="number"] { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid #2a3a64; background: #0f152b; color: #e8ecf1; }
+      .row { display: grid; grid-template-columns: 1fr 140px 40px; gap: 12px; align-items: end; }
+      .row + .row { margin-top: 8px; }
+      button { background: #2a6df5; color: white; border: 0; padding: 10px 14px; border-radius: 8px; cursor: pointer; }
+      button:disabled { opacity: .6; cursor: not-allowed; }
+      .muted { opacity: .75; font-size: 12px; }
+      pre { white-space: pre-wrap; word-wrap: break-word; background: #0f152b; border: 1px solid #2a3a64; padding: 12px; border-radius: 8px; }
+      .grid { display: grid; gap: 16px; }
+      .checkbox { display: inline-flex; align-items: center; gap: 8px; margin-top: 10px; }
+      .bad { color: #f77; }
+      .good { color: #7f7; }
+      code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+    </style>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  </head>
+  <body>
+    <div class="card">
+      <h1>MC-BOM UI</h1>
+      <div id="root"></div>
+      <p class="muted">Tip: Mount your local modpack path into the container as <code>/data/instance</code>. In docker-compose, set <code>MCBOM_INSTANCE_HOST</code> to your instance's <code>minecraft</code> directory.</p>
+    </div>
+    <script src="/ui/app.js"></script>
+  </body>
+</html>
