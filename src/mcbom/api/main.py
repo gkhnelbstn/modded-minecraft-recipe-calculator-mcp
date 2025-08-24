@@ -12,6 +12,10 @@ from mcbom.llm.schemas import ExtractedPlan
 from mcbom.core.engine import BomEngine
 from mcbom.core.parser import load_recipes, load_tags
 from mcbom.core.exporter import to_mermaid
+from mcbom.core.indexer import (
+    query_items as idx_query_items,
+    build_index as idx_build_index,
+)
 
 # TODO(roadmap-api):
 # - Upload endpoint to ingest JEI/RecipeManager dump files and merge into runtime registry.
@@ -38,6 +42,17 @@ app.add_middleware(
 
 # Serve minimal static UI from /ui
 app.mount("/ui", StaticFiles(directory="frontend", html=True), name="ui")
+
+# Warm up the items index on startup (best-effort)
+@app.on_event("startup")
+async def _warm_items_index() -> None:
+    base = os.environ.get("MCBOM_DATA_ROOT", "/data/instance")
+    try:
+        idx_build_index(base, refresh=False)
+        print(f"API: warmed items index for base '{base}'")
+    except Exception as e:
+        # Do not block startup on indexing issues
+        print(f"API: items index warmup skipped: {e}")
 
 # --- Data Models ---
 class PlanRequest(BaseModel):
@@ -131,3 +146,25 @@ async def calculate_bom_direct(req: DirectCalcRequest):
     if req.diagram:
         resp["mermaid"] = to_mermaid(analysis)
     return JSONResponse(resp)
+
+@app.get("/items")
+async def list_items(
+    query: Optional[str] = None,
+    limit: int = 50,
+    instance_path: Optional[str] = None,
+    refresh: bool = False,
+):
+    """Return items from a persistent SQLite index for fast search.
+
+    Query Params:
+      - query: optional search text; tokenized prefix search when FTS is available, else LIKE.
+      - limit: max results, clamped to [1, 500].
+      - instance_path: override for data root; defaults to env MCBOM_DATA_ROOT or /data/instance.
+      - refresh: force rebuild of the index before querying.
+    """
+    base = instance_path or os.environ.get("MCBOM_DATA_ROOT", "/data/instance")
+    limit = max(1, min(limit, 500))
+    print(f"API: /items -> base '{base}', query='{query}', limit={limit}, refresh={refresh}")
+
+    items = idx_query_items(base, query, limit=limit, refresh=refresh)
+    return JSONResponse({"items": items, "count": len(items)})

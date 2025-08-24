@@ -31,6 +31,16 @@ def to_mermaid(analysis: Dict) -> str:
     """
     steps: List[Dict] = analysis.get("steps", [])
 
+    # If there are no steps (the item is a raw material with no recipe),
+    # still render a minimal single-node graph so the UI shows something.
+    if not steps:
+        target_label = analysis.get("target", "item")
+        target_label = target_label.replace("\"", "'")
+        return "\n".join([
+            "flowchart LR",
+            f"  n1[\"{target_label}\"]",
+        ])
+
     # Collect unique items to define nodes
     items: List[str] = []
     def ensure_item(it: str):
